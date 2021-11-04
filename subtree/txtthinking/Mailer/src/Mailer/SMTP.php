@@ -153,7 +153,7 @@ class SMTP
             $this->starttls()
                 ->ehlo();
         }
-        $this->authLogin()
+        $this->authPlain()
             ->mailFrom()
             ->rcptTo()
             ->data()
@@ -254,6 +254,40 @@ class SMTP
         }
         return $this;
     }
+
+
+        /**
+     * SMTP AUTH PLAIN
+     * SUCCESS 334
+     * SUCCESS 334
+     * SUCCESS 235
+     * @return $this
+     * @throws CodeException
+     * @throws SMTPException
+     */
+    protected function authPlain()
+    {
+        if ($this->username === null && $this->password === null) {
+            // Unless the user has specifically set a username/password
+            // Do not try to authorize.
+            return $this;
+        }
+
+        $in = "AUTH Plain" . $this->CRLF;
+        $code = $this->pushStack($in);
+        if ($code !== '334'){
+            throw new CodeException('334', $code, array_pop($this->resultStack));
+        }
+
+        $in = base64_encode("\0".$this->username."\0".$this->password) . $this->CRLF;
+        $code = $this->pushStack($in);
+        if ($code !== '235'){
+            throw new CodeException('235', $code, array_pop($this->resultStack));
+        }
+        return $this;
+    }
+
+
 
     /**
      * SMTP MAIL FROM
